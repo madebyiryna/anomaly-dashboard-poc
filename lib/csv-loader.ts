@@ -204,6 +204,37 @@ export class CSVLoader {
     }
   }
 
+  getDataProductHealthMetrics() {
+    // Calculate total rows across all 3 datasets
+    const totalRowsAllDatasets = this.datasets.pharmacy.length + this.datasets.medical.length + this.datasets.joined.length
+    
+    // Total number of anomalies across all sources
+    const totalAnomalies = this.anomalies.length
+    
+    // Joined dataset specific metrics
+    const joinedRows = this.datasets.joined.length
+    const joinedAnomalies = this.anomalies.filter((a) => a.source === "joined")
+    
+    return {
+      // Health Data Index: Number of healthy rows to total number of rows in all 3 datasets
+      healthDataIndex: totalRowsAllDatasets > 0 ? ((totalRowsAllDatasets - totalAnomalies) / totalRowsAllDatasets) * 100 : 0,
+      
+      // Data Anomalies: Total number of anomalies
+      dataAnomalies: totalAnomalies,
+      
+      // Health Data Product Index: Number of rows in joined to number of anomalies in joined
+      healthDataProductIndex: joinedRows > 0 ? ((joinedRows - joinedAnomalies.length) / joinedRows) * 100 : 0,
+      
+      // Data Product Anomalies: Number of joined anomalies
+      dataProductAnomalies: joinedAnomalies.length,
+      
+      // Additional context
+      totalRowsAllDatasets,
+      joinedRows,
+      joinedAnomaliesCount: joinedAnomalies.length
+    }
+  }
+
   getStageStats() {
     const stages = getStageNames()
     return stages.map((stage) => ({

@@ -17,6 +17,15 @@ export function OverviewDashboard() {
     anomalousRows: 0,
     healthyPercentage: 0,
   })
+  const [dataProductHealth, setDataProductHealth] = useState({
+    healthDataIndex: 0,
+    dataAnomalies: 0,
+    healthDataProductIndex: 0,
+    dataProductAnomalies: 0,
+    totalRowsAllDatasets: 0,
+    joinedRows: 0,
+    joinedAnomaliesCount: 0
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -26,7 +35,9 @@ export function OverviewDashboard() {
         const csvLoader = CSVLoader.getInstance()
         await csvLoader.loadData()
         const stats = csvLoader.getHealthStats()
+        const dataProductStats = csvLoader.getDataProductHealthMetrics()
         setHealthData(stats)
+        setDataProductHealth(dataProductStats)
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data")
       } finally {
@@ -72,75 +83,144 @@ export function OverviewDashboard() {
       <div className="space-y-2">
         <h2 className="text-3xl font-bold text-foreground text-balance">Data Product Health Monitor</h2>
         <p className="text-muted-foreground text-pretty">
-          Real-time overview of anomaly detection across the New York Oncology dataset
+          Comprehensive health metrics across pharmacy, medical, and joined datasets with anomaly analysis
         </p>
       </div>
 
-      {/* KPI Cards */}
+      {/* Data Product Health Monitor KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Health Percentage */}
+        {/* Health Data Index */}
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Data Health</CardTitle>
+            <CardTitle className="text-sm font-medium text-card-foreground">Health Data Index</CardTitle>
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">{healthPercentage}%</div>
+            <div className="text-2xl font-bold text-card-foreground">
+              {dataProductHealth.healthDataIndex.toFixed(2)}%
+            </div>
             <p className="text-xs text-muted-foreground">
-              {healthData.healthyRows.toLocaleString()} of {healthData.totalRows.toLocaleString()} rows
+              Healthy rows to total rows across all datasets
             </p>
-            <Progress value={healthPercentage} className="mt-2" />
+            <Progress value={dataProductHealth.healthDataIndex} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              {dataProductHealth.totalRowsAllDatasets - dataProductHealth.dataAnomalies} / {dataProductHealth.totalRowsAllDatasets.toLocaleString()} rows
+            </p>
           </CardContent>
         </Card>
 
-        {/* Total Anomalous Rows */}
+        {/* Data Anomalies */}
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Anomalous Rows</CardTitle>
+            <CardTitle className="text-sm font-medium text-card-foreground">Data Anomalies</CardTitle>
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{healthData.anomalousRows}</div>
-            <p className="text-xs text-muted-foreground">Rows with detected anomalies</p>
+            <div className="text-2xl font-bold text-destructive">
+              {dataProductHealth.dataAnomalies.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">Total anomalies across all sources</p>
             <Badge variant="destructive" className="mt-2">
               Requires Review
             </Badge>
           </CardContent>
         </Card>
 
-        {/* Healthy Rows */}
+        {/* Health Data Product Index */}
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Healthy Rows</CardTitle>
+            <CardTitle className="text-sm font-medium text-card-foreground">Health Data Product Index</CardTitle>
             <CheckCircle className="h-4 w-4 text-chart-2" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-chart-2">{healthData.healthyRows.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">No anomalies detected</p>
-            <Badge variant="secondary" className="mt-2 bg-chart-2/10 text-chart-2">
-              Clean
-            </Badge>
+            <div className="text-2xl font-bold text-chart-2">
+              {dataProductHealth.healthDataProductIndex.toFixed(2)}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Healthy rows in joined dataset
+            </p>
+            <Progress value={dataProductHealth.healthDataProductIndex} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              {dataProductHealth.joinedRows - dataProductHealth.joinedAnomaliesCount} / {dataProductHealth.joinedRows.toLocaleString()} rows
+            </p>
           </CardContent>
         </Card>
 
-        {/* Total Rows */}
+        {/* Data Product Anomalies */}
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-card-foreground">Total Dataset</CardTitle>
+            <CardTitle className="text-sm font-medium text-card-foreground">Data Product Anomalies</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-card-foreground">{healthData.totalRows.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Rows in joined dataset</p>
+            <div className="text-2xl font-bold text-card-foreground">
+              {dataProductHealth.dataProductAnomalies.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">Anomalies in joined dataset</p>
             <div className="flex gap-1 mt-2">
               <Badge variant="outline" className="text-xs">
-                {healthData.anomalousRows > 0 ? Math.round((healthData.anomalousRows / healthData.totalRows) * 100) : 0}
-                % Anomalous
+                {dataProductHealth.joinedRows > 0 ? Math.round((dataProductHealth.dataProductAnomalies / dataProductHealth.joinedRows) * 100) : 0}%
+                of joined dataset
               </Badge>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Dataset Summary */}
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="text-card-foreground">Data Overview</CardTitle>
+          <CardDescription>Comprehensive breakdown of data across all three datasets</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{dataProductHealth.totalRowsAllDatasets.toLocaleString()}</div>
+              <div className="text-sm text-muted-foreground">Total Rows</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                All Datasets Combined
+              </div>
+            </div>
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{dataProductHealth.totalRowsAllDatasets - dataProductHealth.dataAnomalies}</div>
+              <div className="text-sm text-muted-foreground">Healthy Rows</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                No Anomalies Detected
+              </div>
+            </div>
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">{dataProductHealth.dataAnomalies.toLocaleString()}</div>
+              <div className="text-sm text-muted-foreground">Total Anomalies</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Across All Sources
+              </div>
+            </div>
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">{dataProductHealth.joinedRows.toLocaleString()}</div>
+              <div className="text-sm text-muted-foreground">Joined Dataset</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Primary Data Product
+              </div>
+            </div>
+          </div>
+          
+          {/* Health Summary */}
+          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+            <div className="text-sm font-medium text-muted-foreground mb-2">Health Summary</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Overall Health:</span>
+                <span className="ml-2 font-medium">{dataProductHealth.healthDataIndex.toFixed(2)}% healthy</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Data Product Health:</span>
+                <span className="ml-2 font-medium">{dataProductHealth.healthDataProductIndex.toFixed(2)}% healthy</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -148,10 +228,13 @@ export function OverviewDashboard() {
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="text-card-foreground">System Health Overview</CardTitle>
-            <CardDescription>Visual representation of healthy vs anomalous data rows</CardDescription>
+            <CardDescription>Visual representation of healthy vs anomalous data rows across all datasets</CardDescription>
           </CardHeader>
           <CardContent>
-            <HealthMeter healthyRows={healthData.healthyRows} anomalousRows={healthData.anomalousRows} />
+            <HealthMeter 
+              healthyRows={dataProductHealth.totalRowsAllDatasets - dataProductHealth.dataAnomalies} 
+              anomalousRows={dataProductHealth.dataAnomalies} 
+            />
           </CardContent>
         </Card>
 
