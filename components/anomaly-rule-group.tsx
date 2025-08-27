@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle, ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CSVLoader, type AnomalyRow } from "@/lib/csv-loader"
 
 interface AnomalyRuleGroupProps {
   stage: string
@@ -16,6 +17,45 @@ interface AnomalyRuleGroupProps {
 
 export function AnomalyRuleGroup({ stage, rules, showUnresolvedOnly }: AnomalyRuleGroupProps) {
   const [expandedRules, setExpandedRules] = useState<Set<string>>(new Set())
+  const [anomaliesByRule, setAnomaliesByRule] = useState<Record<string, AnomalyRow[]>>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadAnomalies = async () => {
+      try {
+        const csvLoader = CSVLoader.getInstance()
+        await csvLoader.loadData()
+        
+        const allAnomalies = csvLoader.getAnomalies()
+        
+        // Filter anomalies by stage and group by rule
+        const stageAnomalies = allAnomalies.filter(anomaly => {
+          const stageName = anomaly.stage
+          return stageName === stage || 
+                 (stage === 'Data Quality' && stageName === 'DQ') ||
+                 (stage === 'Smart Data Quality' && stageName === 'SmartDQ') ||
+                 (stage === 'Business Rules' && stageName === 'Business')
+        })
+        
+        const groupedAnomalies: Record<string, AnomalyRow[]> = {}
+        
+        stageAnomalies.forEach(anomaly => {
+          if (!groupedAnomalies[anomaly.rule]) {
+            groupedAnomalies[anomaly.rule] = []
+          }
+          groupedAnomalies[anomaly.rule].push(anomaly)
+        })
+        
+        setAnomaliesByRule(groupedAnomalies)
+      } catch (error) {
+        console.error("Failed to load anomalies:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadAnomalies()
+  }, [stage])
 
   const toggleRule = (ruleName: string) => {
     const newExpanded = new Set(expandedRules)
@@ -27,46 +67,12 @@ export function AnomalyRuleGroup({ stage, rules, showUnresolvedOnly }: AnomalyRu
     setExpandedRules(newExpanded)
   }
 
-  // Mock anomaly details - in real app this would come from API
-  const generateMockAnomalies = (ruleName: string, count: number) => {
-    const baseAnomalies = [
-      {
-        id: "ANO-001",
-        rule: ruleName,
-        rowIndex: 1247,
-        source: "pharmacy",
-        resolved: false,
-        lastUpdated: "2024-01-20T10:30:00Z",
-        description: "Business KPI percent change spike detected: +45.2% vs previous week (threshold 25%)",
-      },
-      {
-        id: "ANO-002",
-        rule: ruleName,
-        rowIndex: 3891,
-        source: "medical",
-        resolved: true,
-        lastUpdated: "2024-01-19T14:15:00Z",
-        description: "Required field 'diagnosis' is missing or null when it should contain data",
-      },
-      {
-        id: "ANO-003",
-        rule: ruleName,
-        rowIndex: 5623,
-        source: "joined",
-        resolved: false,
-        lastUpdated: "2024-01-21T09:45:00Z",
-        description: "Null rate exceeds expected threshold for this field (actual: 15%, expected: <5%)",
-      },
-    ]
-
-    return baseAnomalies.slice(0, Math.min(count, 3)).map((anomaly, index) => ({
-      ...anomaly,
-      id: `${ruleName.toUpperCase()}-${String(index + 1).padStart(3, "0")}`,
-    }))
+  const handleAnomalyClick = (anomalyId: number) => {
+    window.location.href = `/anomaly/${anomalyId}`
   }
 
-  const handleAnomalyClick = (anomalyId: string) => {
-    window.location.href = `/anomaly/${anomalyId}`
+  const formatRuleName = (ruleName: string) => {
+    return ruleName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
   }
 
   const filteredRules = Object.entries(rules).filter(([_, ruleData]) => {
@@ -76,12 +82,24 @@ export function AnomalyRuleGroup({ stage, rules, showUnresolvedOnly }: AnomalyRu
     return true
   })
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Card className="border-border">
+          <CardContent className="flex items-center justify-center py-8">
+            <div className="text-muted-foreground">Loading anomalies...</div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       {filteredRules.map(([ruleName, ruleData]) => {
         const isExpanded = expandedRules.has(ruleName)
-        const mockAnomalies = generateMockAnomalies(ruleName, ruleData.total)
-        const displayedAnomalies = showUnresolvedOnly ? mockAnomalies.filter((a) => !a.resolved) : mockAnomalies
+        const ruleAnomalies = anomaliesByRule[ruleName] || []
+        const displayedAnomalies = ruleAnomalies // All anomalies are considered unresolved for now
 
         return (
           <Card key={ruleName} className="border-border">
@@ -98,7 +116,7 @@ export function AnomalyRuleGroup({ stage, rules, showUnresolvedOnly }: AnomalyRu
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   )}
                   <CardTitle className="text-lg text-card-foreground">
-                    {ruleName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                    {formatRuleName(ruleName)}
                   </CardTitle>
                 </Button>
                 <div className="flex items-center gap-2">
@@ -118,43 +136,36 @@ export function AnomalyRuleGroup({ stage, rules, showUnresolvedOnly }: AnomalyRu
                         <TableHead>Anomaly ID</TableHead>
                         <TableHead>Row Index</TableHead>
                         <TableHead>Source</TableHead>
+                        <TableHead>Description</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Last Updated</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {displayedAnomalies.map((anomaly) => (
+                      {displayedAnomalies.slice(0, 10).map((anomaly) => (
                         <TableRow
-                          key={anomaly.id}
+                          key={anomaly.anomaly_id}
                           className={cn(
                             "cursor-pointer transition-colors",
-                            !anomaly.resolved && "bg-destructive/5 hover:bg-destructive/10",
+                            "bg-destructive/5 hover:bg-destructive/10",
                           )}
-                          onClick={() => handleAnomalyClick(anomaly.id)}
+                          onClick={() => handleAnomalyClick(anomaly.anomaly_id)}
                         >
-                          <TableCell className="font-medium">{anomaly.id}</TableCell>
-                          <TableCell>{anomaly.rowIndex}</TableCell>
+                          <TableCell className="font-medium">{anomaly.anomaly_id}</TableCell>
+                          <TableCell>{anomaly.row_index}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="capitalize">
                               {anomaly.source}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            {anomaly.resolved ? (
-                              <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                                <CheckCircle className="h-3 w-3" />
-                                Resolved
-                              </Badge>
-                            ) : (
-                              <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                                <AlertTriangle className="h-3 w-3" />
-                                Open
-                              </Badge>
-                            )}
+                          <TableCell className="max-w-xs truncate" title={anomaly.description}>
+                            {anomaly.description}
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(anomaly.lastUpdated).toLocaleDateString()}
+                          <TableCell>
+                            <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                              <AlertTriangle className="h-3 w-3" />
+                              Open
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -170,6 +181,12 @@ export function AnomalyRuleGroup({ stage, rules, showUnresolvedOnly }: AnomalyRu
                 {displayedAnomalies.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     {showUnresolvedOnly ? "No unresolved anomalies for this rule" : "No anomalies found"}
+                  </div>
+                )}
+
+                {displayedAnomalies.length > 10 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Showing first 10 of {displayedAnomalies.length} anomalies
                   </div>
                 )}
               </CardContent>

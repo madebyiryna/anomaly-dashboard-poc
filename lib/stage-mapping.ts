@@ -55,14 +55,17 @@ export function getStageDisplayName(stageName: StageName): StageDisplayName {
 }
 
 export function getStageDisplayNameSafe(stageName: string): string {
-  // Try to find the stage by name first
-  const stage = STAGE_MAPPING[stageName as StageName]
-  if (stage) {
-    return stage.displayName
+  // Map CSV stage names to display names
+  const stageMapping: Record<string, string> = {
+    'DQ': 'Data Quality',
+    'SmartDQ': 'Smart Data Quality',
+    'Business': 'Business Rules',
+    'Data Quality': 'Data Quality',
+    'Smart Data Quality': 'Smart Data Quality',
+    'Business Rules': 'Business Rules'
   }
   
-  // If not found, return the original name
-  return stageName
+  return stageMapping[stageName] || stageName
 }
 
 export function getStageName(stageId: StageId): StageName | undefined {

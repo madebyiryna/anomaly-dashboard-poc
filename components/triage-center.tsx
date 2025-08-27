@@ -1,154 +1,160 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Database, Brain, TrendingUp } from "lucide-react"
 import { AnomalyRuleGroup } from "./anomaly-rule-group"
-import { getStageInfo } from "@/lib/stage-mapping"
+import { getStageInfo, getStageDisplayNameSafe } from "@/lib/stage-mapping"
+import { CSVLoader, type AnomalyRow } from "@/lib/csv-loader"
 
 export function TriageCenter() {
   const [showUnresolvedOnly, setShowUnresolvedOnly] = useState(false)
+  const [anomalyData, setAnomalyData] = useState<{
+    stages: Record<string, { total: number; rules: Record<string, { total: number; resolved: number; unresolved: number }> }>
+    totalAnomalies: number
+    uniqueRules: number
+  }>({
+    stages: {},
+    totalAnomalies: 0,
+    uniqueRules: 0
+  })
+  const [loading, setLoading] = useState(true)
 
-  // Mock data - in real app this would come from API
-  const triageData = {
-    dataQuality: {
-      total: 89,
-      resolved: 23,
-      unresolved: 66,
-      rules: {
-        missing_key_field: { total: 43, resolved: 12, unresolved: 31 },
-        unexpected_null_rate: { total: 19, resolved: 8, unresolved: 11 },
-        data_type_mismatch: { total: 15, resolved: 2, unresolved: 13 },
-        duplicate_records: { total: 12, resolved: 1, unresolved: 11 },
-      },
-    },
-    smartDataQuality: {
-      total: 67,
-      resolved: 15,
-      unresolved: 52,
-      rules: {
-        outlier_detection: { total: 28, resolved: 7, unresolved: 21 },
-        pattern_anomaly: { total: 22, resolved: 5, unresolved: 17 },
-        correlation_break: { total: 17, resolved: 3, unresolved: 14 },
-      },
-    },
-    business: {
-      total: 42,
-      resolved: 8,
-      unresolved: 34,
-      rules: {
-        business_pct_spike: { total: 25, resolved: 4, unresolved: 21 },
-        kpi_threshold_breach: { total: 12, resolved: 3, unresolved: 9 },
-        trend_deviation: { total: 5, resolved: 1, unresolved: 4 },
-      },
-    },
-  }
+  useEffect(() => {
+    const loadAnomalyData = async () => {
+      try {
+        console.log("Starting to load anomaly data...")
+        
+        const csvLoader = CSVLoader.getInstance()
+        await csvLoader.loadData()
+        
+        const anomalies = csvLoader.getAnomalies()
+        console.log("Loaded anomalies:", anomalies.length)
+        
+        // Calculate real statistics
+        const totalAnomalies = anomalies.length
+        
+        // Get unique rules count
+        const uniqueRules = new Set(anomalies.map(a => a.rule)).size
+        
+        // Group by stage and rule
+        const stageData: Record<string, { total: number; rules: Record<string, { total: number; resolved: number; unresolved: number }> }> = {}
+        
+        anomalies.forEach(anomaly => {
+          const stageName = getStageDisplayNameSafe(anomaly.stage)
+          
+          if (!stageData[stageName]) {
+            stageData[stageName] = {
+              total: 0,
+              rules: {}
+            }
+          }
+          
+          stageData[stageName].total++
+          
+          if (!stageData[stageName].rules[anomaly.rule]) {
+            stageData[stageName].rules[anomaly.rule] = {
+              total: 0,
+              resolved: 0,
+              unresolved: 0
+            }
+          }
+          
+          stageData[stageName].rules[anomaly.rule].total++
+          // For now, all anomalies are unresolved (we can add resolution logic later)
+          stageData[stageName].rules[anomaly.rule].unresolved++
+        })
+        
+        console.log("Processed anomaly data:", {
+          totalAnomalies,
+          uniqueRules,
+          stageData
+        })
+        
+        setAnomalyData({
+          stages: stageData,
+          totalAnomalies,
+          uniqueRules
+        })
+        
+      } catch (error) {
+        console.error("Failed to load anomaly data:", error)
+        // Set loading to false even on error
+        setLoading(false)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadAnomalyData()
+  }, [])
 
-  const PillarCard = ({
-    title,
-    description,
-    icon: Icon,
-    data,
-    color,
-  }: {
-    title: string
-    description: string
-    icon: any
-    data: any
-    color: string
-  }) => {
-    const resolvedPercentage = Math.round((data.resolved / data.total) * 100)
-
+  if (loading) {
     return (
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${color}`}>
-              <Icon className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-card-foreground">{title}</h3>
-              <CardDescription>{description}</CardDescription>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-card-foreground">{data.total}</div>
-              <div className="text-sm text-muted-foreground">Total</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-destructive">{data.unresolved}</div>
-              <div className="text-sm text-muted-foreground">Unresolved</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-chart-2">{data.resolved}</div>
-              <div className="text-sm text-muted-foreground">Resolved</div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Resolution Progress</span>
-              <span className="text-card-foreground font-medium">{resolvedPercentage}%</span>
-            </div>
-            <Progress value={resolvedPercentage} className="h-2" />
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-medium text-card-foreground">Rules Breakdown</h4>
-            {Object.entries(data.rules).map(([ruleName, ruleData]: [string, any]) => (
-              <div key={ruleName} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{ruleName.replace(/_/g, " ")}</span>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {ruleData.total}
-                  </Badge>
-                  {ruleData.unresolved > 0 && (
-                    <Badge variant="destructive" className="text-xs">
-                      {ruleData.unresolved} open
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-8">
+        <Card className="border-border">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-muted-foreground">Loading anomaly data...</div>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
+  // Debug: Show if no data is loaded
+  if (anomalyData.totalAnomalies === 0) {
+    return (
+      <div className="space-y-8">
+        <Card className="border-border">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-muted-foreground">
+              No anomaly data found. Total anomalies: {anomalyData.totalAnomalies}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const stageEntries = Object.entries(anomalyData.stages)
+  const defaultStage = stageEntries.length > 0 ? stageEntries[0][0] : ""
+
   return (
     <div className="space-y-8">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <PillarCard
-          title={getStageInfo('Data Quality')?.displayName || 'Data Quality'}
-          description={getStageInfo('Data Quality')?.description || 'Basic data quality checks and validation'}
-          icon={Database}
-          data={triageData.dataQuality}
-          color={getStageInfo('Data Quality')?.color || 'bg-blue-500'}
-        />
-        <PillarCard
-          title={getStageInfo('Smart Data Quality')?.displayName || 'Smart Data Quality'}
-          description={getStageInfo('Smart Data Quality')?.description || 'Advanced ML-powered data quality analysis'}
-          icon={Brain}
-          data={triageData.smartDataQuality}
-          color={getStageInfo('Smart Data Quality')?.color || 'bg-purple-500'}
-        />
-        <PillarCard
-          title={getStageInfo('Business')?.displayName || 'Business Rules'}
-          description={getStageInfo('Business')?.description || 'Business logic validation and KPI monitoring'}
-          icon={TrendingUp}
-          data={triageData.business}
-          color={getStageInfo('Business')?.color || 'bg-green-500'}
-        />
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-lg">Total Anomalies</CardTitle>
+            <CardDescription>All detected anomalies across all stages</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-card-foreground">{anomalyData.totalAnomalies.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-lg">Active Stages</CardTitle>
+            <CardDescription>Stages with detected anomalies</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-card-foreground">{stageEntries.length}</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-lg">Unique Rules</CardTitle>
+            <CardDescription>Different anomaly detection rules triggered</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-card-foreground">{anomalyData.uniqueRules}</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Detailed Triage Interface */}
@@ -168,37 +174,31 @@ export function TriageCenter() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="data-quality" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="data-quality">{getStageInfo('Data Quality')?.displayName || 'Data Quality'} ({triageData.dataQuality.total})</TabsTrigger>
-          <TabsTrigger value="smart-dq">{getStageInfo('Smart Data Quality')?.displayName || 'Smart Data Quality'} ({triageData.smartDataQuality.total})</TabsTrigger>
-          <TabsTrigger value="business">{getStageInfo('Business')?.displayName || 'Business Rules'} ({triageData.business.total})</TabsTrigger>
-        </TabsList>
+          {stageEntries.length > 0 ? (
+            <Tabs defaultValue={defaultStage} className="space-y-6">
+              <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${stageEntries.length}, 1fr)` }}>
+                {stageEntries.map(([stageName, stageData]) => (
+                  <TabsTrigger key={stageName} value={stageName}>
+                    {stageName} ({stageData.total})
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-            <TabsContent value="data-quality" className="space-y-4">
-              <AnomalyRuleGroup
-                stage={getStageInfo('Data Quality')?.displayName || 'Data Quality'}
-                rules={triageData.dataQuality.rules}
-                showUnresolvedOnly={showUnresolvedOnly}
-              />
-            </TabsContent>
-
-            <TabsContent value="smart-dq" className="space-y-4">
-              <AnomalyRuleGroup
-                stage={getStageInfo('Smart Data Quality')?.displayName || 'Smart Data Quality'}
-                rules={triageData.smartDataQuality.rules}
-                showUnresolvedOnly={showUnresolvedOnly}
-              />
-            </TabsContent>
-
-            <TabsContent value="business" className="space-y-4">
-              <AnomalyRuleGroup
-                stage={getStageInfo('Business')?.displayName || 'Business Rules'}
-                rules={triageData.business.rules}
-                showUnresolvedOnly={showUnresolvedOnly}
-              />
-            </TabsContent>
-          </Tabs>
+              {stageEntries.map(([stageName, stageData]) => (
+                <TabsContent key={stageName} value={stageName} className="space-y-4">
+                  <AnomalyRuleGroup
+                    stage={stageName}
+                    rules={stageData.rules}
+                    showUnresolvedOnly={showUnresolvedOnly}
+                  />
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No anomaly data available
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
