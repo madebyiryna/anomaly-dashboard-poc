@@ -122,6 +122,10 @@ export function AnomalyDetail({ anomalyId }: AnomalyDetailProps) {
     return fieldName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
   }
 
+  const isDataQualityIssue = (stage: string) => {
+    return stage.toLowerCase() === 'dq' || stage.toLowerCase() === 'sdq'
+  }
+
   const formatFieldValue = (value: any, fieldName: string) => {
     if (value === null || value === undefined) return "null"
     
@@ -188,7 +192,9 @@ export function AnomalyDetail({ anomalyId }: AnomalyDetailProps) {
           Back
         </Button>
         <div className="flex-1">
-          <h2 className="text-3xl font-bold text-foreground text-balance">Anomaly Detail</h2>
+          <h2 className="text-3xl font-bold text-foreground text-balance">
+            {isDataQualityIssue(anomalyData.stage) ? 'Data Quality Issue' : 'Anomaly Detail'}
+          </h2>
           <p className="text-muted-foreground">ID: {anomalyData.anomaly_id}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -196,6 +202,11 @@ export function AnomalyDetail({ anomalyId }: AnomalyDetailProps) {
             <AlertTriangle className="h-3 w-3" />
             Open
           </Badge>
+          {isDataQualityIssue(anomalyData.stage) && (
+            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              Data Quality
+            </Badge>
+          )}
           <Badge variant="outline">High Priority</Badge>
         </div>
       </div>
@@ -217,7 +228,12 @@ export function AnomalyDetail({ anomalyId }: AnomalyDetailProps) {
                   <Label className="text-sm font-medium text-muted-foreground">Stage</Label>
                   <div className="flex items-center gap-2">
                     <div className={cn("w-3 h-3 rounded-full", getStageColor(getStageDisplayNameSafe(anomalyData.stage)))} />
-                    <span className="text-card-foreground">{getStageDisplayNameSafe(anomalyData.stage)}</span>
+                    <span className="text-card-foreground">
+                      {isDataQualityIssue(anomalyData.stage) 
+                        ? 'Data Quality Issue' 
+                        : getStageDisplayNameSafe(anomalyData.stage)
+                      }
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -254,7 +270,10 @@ export function AnomalyDetail({ anomalyId }: AnomalyDetailProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
-                Description
+                {isDataQualityIssue(anomalyData.stage) 
+                  ? 'Data Quality Issue Description' 
+                  : 'Description'
+                }
               </CardTitle>
             </CardHeader>
             <CardContent>
