@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Download, Mail, CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { STAGE_OPTIONS } from "@/lib/stage-mapping"
 
 interface ExportDialogProps {
   onClose: () => void
@@ -45,12 +46,7 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
     onClose()
   }
 
-  const stages = [
-    { id: "all", label: "All Stages" },
-    { id: "data-quality", label: "Data Quality" },
-    { id: "smart-dq", label: "Smart Data Quality" },
-    { id: "business", label: "Business Rules" },
-  ]
+  const stages = STAGE_OPTIONS
 
   const handleStageChange = (stageId: string, checked: boolean) => {
     if (stageId === "all") {

@@ -8,6 +8,7 @@ import { HealthMeter } from "./health-meter"
 import { StageBreakdown } from "./stage-breakdown"
 import { CSVLoader } from "@/lib/csv-loader"
 import { useEffect, useState } from "react"
+import { getStageNames } from "@/lib/stage-mapping"
 
 export function OverviewDashboard() {
   const [healthData, setHealthData] = useState({
@@ -159,7 +160,7 @@ export function OverviewDashboard() {
           <CardHeader>
             <CardTitle className="text-card-foreground">Anomalies by Detection Stage</CardTitle>
             <CardDescription>
-              Distribution of anomalies across Data Quality, Smart Data Quality, and Business stages
+              Distribution of anomalies across {getStageNames().join(', ')} stages
             </CardDescription>
           </CardHeader>
           <CardContent>

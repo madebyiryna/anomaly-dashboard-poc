@@ -1,3 +1,5 @@
+import { getStageNames, getStageDisplayNameSafe } from "./stage-mapping"
+
 export type Source = "pharmacy" | "medical" | "joined"
 
 export type AnomalyRow = {
@@ -44,15 +46,30 @@ export class CSVLoader {
         this.loadCSV("/data/pharmacy.csv"),
       ])
 
-      // Parse anomalies
-      this.anomalies = anomaliesData.map((row) => ({
-        anomaly_id: Number.parseInt(row.anomaly_id as string),
-        stage: row.stage as string,
-        rule: row.rule as string,
-        source: this.mapSourceToInternal(row.source as string),
-        row_index: Number.parseInt(row.row_index as string),
-        description: row.description as string,
-      }))
+      // Parse anomalies with error handling
+      this.anomalies = anomaliesData.map((row) => {
+        try {
+          return {
+            anomaly_id: Number.parseInt(row.anomaly_id as string),
+            stage: row.stage as string,
+            rule: row.rule as string,
+            source: this.mapSourceToInternal(row.source as string),
+            row_index: Number.parseInt(row.row_index as string),
+            description: row.description as string,
+          }
+        } catch (parseError) {
+          console.warn("Error parsing anomaly row:", row, parseError)
+          // Return a default anomaly object
+          return {
+            anomaly_id: 0,
+            stage: "Business",
+            rule: "unknown",
+            source: "joined" as Source,
+            row_index: 0,
+            description: "Error parsing anomaly data",
+          }
+        }
+      }).filter(anomaly => anomaly.anomaly_id > 0) // Filter out invalid anomalies
 
       // Store datasets
       this.datasets.joined = joinedData
@@ -72,36 +89,51 @@ export class CSVLoader {
   }
 
   private async loadCSV(path: string): Promise<DataRow[]> {
-    const response = await fetch(path)
-    if (!response.ok) {
-      throw new Error(`Failed to load ${path}: ${response.statusText}`)
-    }
+    try {
+      const response = await fetch(path)
+      if (!response.ok) {
+        throw new Error(`Failed to load ${path}: ${response.statusText}`)
+      }
 
-    const text = await response.text()
-    return this.parseCSV(text)
+      const text = await response.text()
+      return this.parseCSV(text)
+    } catch (error) {
+      console.error(`Error loading CSV from ${path}:`, error)
+      throw error
+    }
   }
 
   private parseCSV(text: string): DataRow[] {
-    const lines = text.trim().split("\n")
-    if (lines.length < 2) return []
+    try {
+      const lines = text.trim().split("\n")
+      if (lines.length < 2) return []
 
-    const headers = lines[0].split(",").map((h) => h.trim())
-    const rows: DataRow[] = []
+      const headers = lines[0].split(",").map((h) => h.trim())
+      const rows: DataRow[] = []
 
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim())
-      const row: DataRow = {}
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const values = lines[i].split(",").map((v) => v.trim())
+          const row: DataRow = {}
 
-      headers.forEach((header, index) => {
-        const value = values[index] || ""
-        // Try to parse as number, otherwise keep as string
-        row[header] = isNaN(Number(value)) ? value : Number(value)
-      })
+          headers.forEach((header, index) => {
+            const value = values[index] || ""
+            // Try to parse as number, otherwise keep as string
+            row[header] = isNaN(Number(value)) ? value : Number(value)
+          })
 
-      rows.push(row)
+          rows.push(row)
+        } catch (rowError) {
+          console.warn(`Error parsing row ${i + 1}:`, rowError)
+          // Continue with next row
+        }
+      }
+
+      return rows
+    } catch (error) {
+      console.error("Error parsing CSV:", error)
+      throw error
     }
-
-    return rows
   }
 
   private mapSourceToInternal(source: string): Source {
@@ -173,11 +205,25 @@ export class CSVLoader {
   }
 
   getStageStats() {
-    const stages = ["Data Quality", "Smart Data Quality", "Business"]
+    const stages = getStageNames()
     return stages.map((stage) => ({
-      stage,
+      stage: getStageDisplayNameSafe(stage),
       count: this.anomalies.filter((a) => a.stage === stage).length,
     }))
+  }
+
+  getActualStageStats() {
+    // Count actual stages that exist in the anomaly data
+    const stageCounts = new Map<string, number>()
+    
+    this.anomalies.forEach((anomaly) => {
+      const displayName = getStageDisplayNameSafe(anomaly.stage)
+      stageCounts.set(displayName, (stageCounts.get(displayName) || 0) + 1)
+    })
+
+    return Array.from(stageCounts.entries())
+      .map(([stage, count]) => ({ stage, count }))
+      .sort((a, b) => b.count - a.count) // Sort by count descending
   }
 
   getRuleStats() {

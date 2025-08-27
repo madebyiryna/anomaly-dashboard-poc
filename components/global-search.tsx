@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Search, AlertTriangle, Database, Calendar, ExternalLink } from "lucide-react"
+import { getStageDisplayName } from "@/lib/stage-mapping"
 
 interface GlobalSearchProps {
   onClose: () => void
@@ -40,7 +41,7 @@ export function GlobalSearch({ onClose }: GlobalSearchProps) {
         {
           id: "BUSINESS_PCT_SPIKE-001",
           rule: "business_pct_spike",
-          stage: "Business Rules",
+          stage: getStageDisplayName('Business'),
           source: "joined",
           rowIndex: 1247,
           description: "Business KPI percent change spike detected: +45.2% vs previous week (threshold 25%)",
@@ -51,7 +52,7 @@ export function GlobalSearch({ onClose }: GlobalSearchProps) {
         {
           id: "MISSING_KEY_FIELD-002",
           rule: "missing_key_field",
-          stage: "Data Quality",
+          stage: getStageDisplayName('Data Quality'),
           source: "medical",
           rowIndex: 3891,
           description: "Required field 'diagnosis' is missing or null when it should contain data",
@@ -83,14 +84,14 @@ export function GlobalSearch({ onClose }: GlobalSearchProps) {
       rules: [
         {
           name: "business_pct_spike",
-          stage: "Business Rules",
+          stage: getStageDisplayName('Business'),
           description: "Detects significant percentage changes in business KPIs",
           anomalyCount: 25,
           unresolvedCount: 21,
         },
         {
           name: "missing_key_field",
-          stage: "Data Quality",
+          stage: getStageDisplayName('Data Quality'),
           description: "Identifies missing or null values in required fields",
           anomalyCount: 43,
           unresolvedCount: 31,

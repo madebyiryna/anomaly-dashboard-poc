@@ -20,6 +20,7 @@ import {
   MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getStageDisplayName } from "@/lib/stage-mapping"
 
 interface AnomalyDetailProps {
   anomalyId: string
@@ -31,7 +32,7 @@ export function AnomalyDetail({ anomalyId }: AnomalyDetailProps) {
   // Mock data - in real app this would come from API
   const anomalyData = {
     anomaly_id: anomalyId,
-    stage: "Business Rules",
+    stage: getStageDisplayName('Business'),
     rule: "business_pct_spike",
     source: "joined",
     row_index: 1247,
@@ -94,11 +95,11 @@ export function AnomalyDetail({ anomalyId }: AnomalyDetailProps) {
 
   const getStageColor = (stage: string) => {
     switch (stage) {
-      case "Data Quality":
+      case getStageDisplayName('Data Quality'):
         return "bg-chart-1"
-      case "Smart Data Quality":
+      case getStageDisplayName('Smart Data Quality'):
         return "bg-chart-3"
-      case "Business Rules":
+      case getStageDisplayName('Business'):
         return "bg-primary"
       default:
         return "bg-muted"

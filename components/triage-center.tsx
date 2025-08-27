@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Database, Brain, TrendingUp } from "lucide-react"
 import { AnomalyRuleGroup } from "./anomaly-rule-group"
+import { getStageInfo } from "@/lib/stage-mapping"
 
 export function TriageCenter() {
   const [showUnresolvedOnly, setShowUnresolvedOnly] = useState(false)
@@ -128,25 +129,25 @@ export function TriageCenter() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <PillarCard
-          title="Data Quality"
-          description="Basic data validation and integrity checks"
+          title={getStageInfo('Data Quality')?.displayName || 'Data Quality'}
+          description={getStageInfo('Data Quality')?.description || 'Basic data quality checks and validation'}
           icon={Database}
           data={triageData.dataQuality}
-          color="bg-chart-1"
+          color={getStageInfo('Data Quality')?.color || 'bg-blue-500'}
         />
         <PillarCard
-          title="Smart Data Quality"
-          description="AI-powered anomaly detection and pattern analysis"
+          title={getStageInfo('Smart Data Quality')?.displayName || 'Smart Data Quality'}
+          description={getStageInfo('Smart Data Quality')?.description || 'Advanced ML-powered data quality analysis'}
           icon={Brain}
           data={triageData.smartDataQuality}
-          color="bg-chart-3"
+          color={getStageInfo('Smart Data Quality')?.color || 'bg-purple-500'}
         />
         <PillarCard
-          title="Business Rules"
-          description="Business logic validation and KPI monitoring"
+          title={getStageInfo('Business')?.displayName || 'Business Rules'}
+          description={getStageInfo('Business')?.description || 'Business logic validation and KPI monitoring'}
           icon={TrendingUp}
           data={triageData.business}
-          color="bg-primary"
+          color={getStageInfo('Business')?.color || 'bg-green-500'}
         />
       </div>
 
@@ -168,15 +169,15 @@ export function TriageCenter() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="data-quality" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="data-quality">Data Quality ({triageData.dataQuality.total})</TabsTrigger>
-              <TabsTrigger value="smart-dq">Smart DQ ({triageData.smartDataQuality.total})</TabsTrigger>
-              <TabsTrigger value="business">Business ({triageData.business.total})</TabsTrigger>
-            </TabsList>
+                    <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="data-quality">{getStageInfo('Data Quality')?.displayName || 'Data Quality'} ({triageData.dataQuality.total})</TabsTrigger>
+          <TabsTrigger value="smart-dq">{getStageInfo('Smart Data Quality')?.displayName || 'Smart Data Quality'} ({triageData.smartDataQuality.total})</TabsTrigger>
+          <TabsTrigger value="business">{getStageInfo('Business')?.displayName || 'Business Rules'} ({triageData.business.total})</TabsTrigger>
+        </TabsList>
 
             <TabsContent value="data-quality" className="space-y-4">
               <AnomalyRuleGroup
-                stage="Data Quality"
+                stage={getStageInfo('Data Quality')?.displayName || 'Data Quality'}
                 rules={triageData.dataQuality.rules}
                 showUnresolvedOnly={showUnresolvedOnly}
               />
@@ -184,7 +185,7 @@ export function TriageCenter() {
 
             <TabsContent value="smart-dq" className="space-y-4">
               <AnomalyRuleGroup
-                stage="Smart Data Quality"
+                stage={getStageInfo('Smart Data Quality')?.displayName || 'Smart Data Quality'}
                 rules={triageData.smartDataQuality.rules}
                 showUnresolvedOnly={showUnresolvedOnly}
               />
@@ -192,7 +193,7 @@ export function TriageCenter() {
 
             <TabsContent value="business" className="space-y-4">
               <AnomalyRuleGroup
-                stage="Business Rules"
+                stage={getStageInfo('Business')?.displayName || 'Business Rules'}
                 rules={triageData.business.rules}
                 showUnresolvedOnly={showUnresolvedOnly}
               />

@@ -13,7 +13,7 @@ export function StageBreakdown() {
       try {
         const csvLoader = CSVLoader.getInstance()
         await csvLoader.loadData()
-        const stats = csvLoader.getStageStats()
+        const stats = csvLoader.getActualStageStats()
         const totalAnomalies = stats.reduce((sum, stat) => sum + stat.count, 0)
 
         const formattedData = stats.map((stat) => ({
