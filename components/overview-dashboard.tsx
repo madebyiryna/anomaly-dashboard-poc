@@ -33,7 +33,12 @@ export function OverviewDashboard() {
       }
     }
 
-    loadData()
+    // Only load data on the client side
+    if (typeof window !== 'undefined') {
+      loadData()
+    } else {
+      setLoading(false)
+    }
   }, [])
 
   if (loading) {
