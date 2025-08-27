@@ -1,0 +1,6 @@
+patient_id,diagnosis,procedure,provider,cost,date,facility_type
+P001,Type 2 Diabetes,Blood Glucose Test,Dr. Smith,125.00,2024-01-15,Clinic
+P002,Hypertension,Blood Pressure Check,Dr. Johnson,85.50,2024-01-16,Hospital
+P003,High Cholesterol,Lipid Panel,Dr. Smith,210.75,2024-01-17,Clinic
+P004,GERD,Endoscopy,Dr. Williams,675.25,2024-01-18,Hospital
+P005,Hypertension,EKG,Dr. Johnson,145.00,2024-01-19,Clinic

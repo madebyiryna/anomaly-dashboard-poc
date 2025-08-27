@@ -1,0 +1,6 @@
+patient_id,drug_name,diagnosis,total_cost,treatment_date,provider_id,insurance_type
+P001,Metformin,Type 2 Diabetes,1250.00,2024-01-15,DR001,Medicare
+P002,Lisinopril,Hypertension,890.50,2024-01-16,DR002,Private
+P003,Atorvastatin,High Cholesterol,2100.75,2024-01-17,DR001,Medicaid
+P004,Omeprazole,GERD,675.25,2024-01-18,DR003,Private
+P005,Metoprolol,Hypertension,1450.00,2024-01-19,DR002,Medicare

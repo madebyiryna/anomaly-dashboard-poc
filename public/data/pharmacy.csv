@@ -1,0 +1,6 @@
+patient_id,drug_name,dosage,cost,date,pharmacy_name,prescription_id
+P001,Metformin,500mg,45.00,2024-01-15,CVS Pharmacy,RX001
+P002,Lisinopril,10mg,32.50,2024-01-16,Walgreens,RX002
+P003,Atorvastatin,20mg,78.75,2024-01-17,CVS Pharmacy,RX003
+P004,Omeprazole,20mg,25.25,2024-01-18,Rite Aid,RX004
+P005,Metoprolol,50mg,41.00,2024-01-19,Walgreens,RX005

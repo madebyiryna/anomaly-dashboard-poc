@@ -1,0 +1,11 @@
+anomaly_id,stage,rule,source,row_index,description
+1,Data Quality,missing_key_field,pharmacy,15,Patient ID field is missing or null in pharmacy record
+2,Smart Data Quality,outlier_detection,medical,42,Medical cost $45000 is 3.2 standard deviations above normal range for this procedure
+3,Business,business_pct_spike,joined,128,Drug cost increased by 340% compared to previous month average
+4,Data Quality,unexpected_null_rate,pharmacy,67,Dosage field has unexpected null values (15% null rate vs expected 2%)
+5,Smart Data Quality,pattern_anomaly,medical,89,Diagnosis code pattern does not match standard ICD-10 format
+6,Business,kpi_threshold_breach,joined,203,Total treatment cost exceeds $50000 threshold for outpatient care
+7,Data Quality,duplicate_records,pharmacy,156,Duplicate prescription record detected for same patient and date
+8,Smart Data Quality,correlation_break,medical,234,Expected correlation between diagnosis and procedure codes is broken
+9,Business,trend_deviation,joined,178,Patient volume decreased by 25% from expected seasonal trend
+10,Data Quality,data_type_mismatch,pharmacy,91,Cost field contains non-numeric values
