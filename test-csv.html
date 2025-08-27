@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSV Test</title>
+</head>
+<body>
+    <h1>CSV Loading Test</h1>
+    <div id="status">Testing...</div>
+    
+    <script>
+        async function testCSV() {
+            const status = document.getElementById('status');
+            
+            try {
+                // Test loading anomalies CSV
+                const response = await fetch('/data/anomalies_output.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const text = await response.text();
+                const lines = text.trim().split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                
+                status.innerHTML = `
+                    <p>✅ CSV loaded successfully!</p>
+                    <p>Headers: ${headers.join(', ')}</p>
+                    <p>Total lines: ${lines.length}</p>
+                    <p>First few lines:</p>
+                    <pre>${lines.slice(0, 5).join('\n')}</pre>
+                `;
+            } catch (error) {
+                status.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        testCSV();
+    </script>
+</body>
+</html>

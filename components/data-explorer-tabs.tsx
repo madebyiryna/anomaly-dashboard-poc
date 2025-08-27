@@ -1,19 +1,57 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from "./data-table"
 import { Badge } from "@/components/ui/badge"
+import { CSVLoader } from "@/lib/csv-loader"
 
 export function DataExplorerTabs() {
   const [activeTab, setActiveTab] = useState("pharmacy")
+  const [dataCounts, setDataCounts] = useState({
+    pharmacy: { total: 0, anomalous: 0 },
+    medical: { total: 0, anomalous: 0 },
+    joined: { total: 0, anomalous: 0 },
+  })
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data counts - in real app this would come from API
-  const dataCounts = {
-    pharmacy: { total: 45623, anomalous: 892 },
-    medical: { total: 67234, anomalous: 1134 },
-    joined: { total: 125847, anomalous: 2152 },
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const loader = CSVLoader.getInstance()
+        await loader.loadData()
+        
+        if (loader.isLoaded()) {
+          const stats = loader.getDatasetStats()
+          setDataCounts(stats)
+        }
+      } catch (error) {
+        console.error("Failed to load dataset statistics:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    // Only load data on the client side
+    if (typeof window !== 'undefined') {
+      loadData()
+    } else {
+      setIsLoading(false)
+    }
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-10 bg-muted rounded mb-4"></div>
+          <div className="space-y-4">
+            <div className="h-64 bg-muted rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -47,7 +85,9 @@ export function DataExplorerTabs() {
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{dataCounts.pharmacy.anomalous} anomalies</Badge>
                 <Badge variant="destructive">
-                  {Math.round((dataCounts.pharmacy.anomalous / dataCounts.pharmacy.total) * 100)}% anomalous
+                  {dataCounts.pharmacy.total > 0 
+                    ? Math.round((dataCounts.pharmacy.anomalous / dataCounts.pharmacy.total) * 100)
+                    : 0}% anomalous
                 </Badge>
               </div>
             </CardTitle>
@@ -69,7 +109,9 @@ export function DataExplorerTabs() {
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{dataCounts.medical.anomalous} anomalies</Badge>
                 <Badge variant="destructive">
-                  {Math.round((dataCounts.medical.anomalous / dataCounts.medical.total) * 100)}% anomalous
+                  {dataCounts.medical.total > 0 
+                    ? Math.round((dataCounts.medical.anomalous / dataCounts.medical.total) * 100)
+                    : 0}% anomalous
                 </Badge>
               </div>
             </CardTitle>
@@ -91,7 +133,9 @@ export function DataExplorerTabs() {
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{dataCounts.joined.anomalous} anomalies</Badge>
                 <Badge variant="destructive">
-                  {Math.round((dataCounts.joined.anomalous / dataCounts.joined.total) * 100)}% anomalous
+                  {dataCounts.joined.total > 0 
+                    ? Math.round((dataCounts.joined.anomalous / dataCounts.joined.total) * 100)
+                    : 0}% anomalous
                 </Badge>
               </div>
             </CardTitle>

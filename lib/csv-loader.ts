@@ -49,7 +49,7 @@ export class CSVLoader {
         anomaly_id: Number.parseInt(row.anomaly_id as string),
         stage: row.stage as string,
         rule: row.rule as string,
-        source: row.source as Source,
+        source: this.mapSourceToInternal(row.source as string),
         row_index: Number.parseInt(row.row_index as string),
         description: row.description as string,
       }))
@@ -102,6 +102,20 @@ export class CSVLoader {
     }
 
     return rows
+  }
+
+  private mapSourceToInternal(source: string): Source {
+    // Map external source names to internal source names
+    switch (source.toLowerCase()) {
+      case "join":
+        return "joined"
+      case "pharmacy":
+        return "pharmacy"
+      case "medical":
+        return "medical"
+      default:
+        return "joined" // Default fallback
+    }
   }
 
   private buildLookupMaps(): void {
@@ -176,6 +190,25 @@ export class CSVLoader {
       .map(([rule, count]) => ({ rule, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
+  }
+
+  getDatasetStats() {
+    const stats = {
+      pharmacy: {
+        total: this.datasets.pharmacy.length,
+        anomalous: this.anomalies.filter((a) => a.source === "pharmacy").length,
+      },
+      medical: {
+        total: this.datasets.medical.length,
+        anomalous: this.anomalies.filter((a) => a.source === "medical").length,
+      },
+      joined: {
+        total: this.datasets.joined.length,
+        anomalous: this.anomalies.filter((a) => a.source === "joined").length,
+      },
+    }
+
+    return stats
   }
 
   isLoaded(): boolean {

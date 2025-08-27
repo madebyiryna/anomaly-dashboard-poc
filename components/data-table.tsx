@@ -38,7 +38,12 @@ export function DataTable({ dataset }: DataTableProps) {
       }
     }
 
-    loadData()
+    // Only load data on the client side
+    if (typeof window !== 'undefined') {
+      loadData()
+    } else {
+      setLoading(false)
+    }
   }, [dataset])
 
   const filteredData = data.filter((row) =>
