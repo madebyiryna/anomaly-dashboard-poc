@@ -18,7 +18,7 @@ import { GlobalSearch } from "./global-search"
 import { ExportDialog } from "./export-dialog"
 
 interface GlobalHeaderProps {
-  currentPage: "overview" | "data-explorer" | "triage" | "anomaly-detail"
+  currentPage: "overview" | "data-explorer" | "triage" | "anomaly-detail" | "documentation"
 }
 
 export function GlobalHeader({ currentPage }: GlobalHeaderProps) {
@@ -29,6 +29,7 @@ export function GlobalHeader({ currentPage }: GlobalHeaderProps) {
     { key: "overview", label: "Overview", href: "/" },
     { key: "data-explorer", label: "Data Explorer", href: "/data-explorer" },
     { key: "triage", label: "Triage Center", href: "/triage" },
+    { key: "documentation", label: "Documentation", href: "/documentation" },
   ]
 
   return (
